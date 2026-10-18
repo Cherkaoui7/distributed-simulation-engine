@@ -13,7 +13,7 @@
 #define BUF 65536
 #define HIT_RADIUS 12.0
 typedef struct { int id,active,type,health,team; double x,y,vx,vy; } Entity;
-static Entity e[N]; static int port,left,next_projectile;
+static Entity e[N],remote_players[N]; static int port,left,next_projectile;
 static char input[4096]; static size_t used;
 static int sendline(int fd,const char*s){size_t n=strlen(s),p=0;while(p<n){ssize_t r=send(fd,s+p,n-p,0);if(r<=0)return -1;p+=(size_t)r;}return 0;}
 static int zone(double x){return left?x<500.0:x>=500.0;}
@@ -28,6 +28,10 @@ static void command(int fd,char*s){
  else if(strstr(s,"\"type\":\"migrate\"")){
   if(sscanf(s,"{\"type\":\"migrate\",\"id\":%d,\"x\":%lf,\"y\":%lf,\"vx\":%lf,\"vy\":%lf,\"entity_type\":%d,\"health\":%d,\"team\":%d}",&id,&x,&y,&vx,&vy,&t,&h,&team)!=8||!zone(x)||find(id)>=0)return;
   for(int i=0;i<N;i++)if(e[i].active==0){e[i]=(Entity){id,1,t,h,team,x,y,vx,vy};char a[80];snprintf(a,sizeof a,"{\"type\":\"ack\",\"id\":%d}\n",id);sendline(fd,a);return;}
+ }else if(strstr(s,"\"type\":\"player_state\"")){
+  if(sscanf(s,"{\"type\":\"player_state\",\"id\":%d,\"x\":%lf,\"y\":%lf}",&id,&x,&y)!=3)return;
+  for(int i=0;i<N;i++)if(remote_players[i].active&&remote_players[i].id==id){remote_players[i].x=x;remote_players[i].y=y;return;}
+  for(int i=0;i<N;i++)if(!remote_players[i].active){remote_players[i]=(Entity){id,1,0,100,0,x,y,0,0};return;}
  }else if(strstr(s,"\"type\":\"move\"")){
   if(sscanf(s,"{\"type\":\"move\",\"id\":%d,\"dx\":%lf,\"dy\":%lf}",&id,&dx,&dy)!=3)return;
   int i=find(id);if(i<0||e[i].type!=0)return;x=e[i].x+dx;y=e[i].y+dy;
@@ -47,8 +51,10 @@ static void initialize(void){
 static void simulate(int fd){
  for(int i=0;i<N;i++)if(e[i].active==1&&e[i].type==1){
   int p=-1;double best=1e30;
-  for(int j=0;j<N;j++)if(e[j].active==1&&e[j].type==0){double dx=e[j].x-e[i].x,dy=e[j].y-e[i].y,d=dx*dx+dy*dy;if(d<best){best=d;p=j;}}
-  if(p>=0&&best>1.0){double dx=e[p].x-e[i].x,dy=e[p].y-e[i].y,d=sqrt(best);e[i].vx=dx/d*0.8;e[i].vy=dy/d*0.8;}
+  double tx=0,ty=0;
+  for(int j=0;j<N;j++)if(e[j].active==1&&e[j].type==0){double dx=e[j].x-e[i].x,dy=e[j].y-e[i].y,d=dx*dx+dy*dy;if(d<best){best=d;p=j;tx=e[j].x;ty=e[j].y;}}
+  for(int j=0;j<N;j++)if(remote_players[j].active){double dx=remote_players[j].x-e[i].x,dy=remote_players[j].y-e[i].y,d=dx*dx+dy*dy;if(d<best){best=d;p=j;tx=remote_players[j].x;ty=remote_players[j].y;}}
+  if(p>=0&&best>1.0){double dx=tx-e[i].x,dy=ty-e[i].y,d=sqrt(best);e[i].vx=dx/d*0.8;e[i].vy=dy/d*0.8;}
  }
  for(int i=0;i<N;i++)if(e[i].active==1&&(e[i].type==1||e[i].type==2)){
   double x=e[i].x+e[i].vx,y=e[i].y+e[i].vy;
