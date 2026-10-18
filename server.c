@@ -10,7 +10,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #define N 512
-#define BUF 32768
+#define BUF 65536
 #define HIT_RADIUS 12.0
 typedef struct { int id,active,type,health,team; double x,y,vx,vy; } Entity;
 static Entity e[N]; static int port,left,next_projectile;
@@ -40,7 +40,7 @@ static void command(int fd,char*s){
 }
 static void initialize(void){
  srand((unsigned)time(NULL));next_projectile=port==5000?10000:20000;
- for(int i=0;i<100;i++){double x=left?(double)(rand()%490):500.0+(double)(rand()%490);int id=(left?1:101)+i;int player=i==0;
+ for(int i=0;i<100;i++){double x=left?(double)(rand()%490):500.0+(double)(rand()%490);int id=(left?1:101)+i;int player=left&&i==0;
   e[i]=(Entity){id,1,player?0:1,player?100:50,player?0:1,x,(double)(rand()%650),0,0};
  }
 }
@@ -52,6 +52,7 @@ static void simulate(int fd){
  }
  for(int i=0;i<N;i++)if(e[i].active==1&&(e[i].type==1||e[i].type==2)){
   double x=e[i].x+e[i].vx,y=e[i].y+e[i].vy;
+  if(e[i].type==2&&(y<0||y>650||x<0||x>1000)){e[i].active=0;continue;}
   if(!zone(x)){migrate(fd,i,x,y,e[i].vx,e[i].vy);continue;}
   e[i].x=x;e[i].y=y;
   if(e[i].type==2)for(int j=0;j<N;j++)if(e[j].active==1&&e[j].type==1&&e[j].team!=e[i].team&&hypot(e[j].x-x,e[j].y-y)<HIT_RADIUS){
