@@ -206,9 +206,9 @@ The `phase-5-godot-combat` branch adds `godot/NetworkManager.gd` and extends the
 
 ### Godot scene setup
 
-1. Open Godot 4 and create a project in the repository's `godot/` directory (or create a separate Godot project and copy `NetworkManager.gd` into it).
-2. Create a `Node2D` root node and attach `NetworkManager.gd`.
-3. Set the project viewport to approximately 1000×650. The script uses world coordinates from the simulation snapshots.
+1. Open the `godot/project.godot` file in Godot 4.
+2. The included `Main.tscn` already has a `Node2D` root with `NetworkManager.gd` attached.
+3. The project viewport is configured to 1000×650 to match the simulation world.
 4. Set the exported `player_id` to `1` unless you intentionally change the server's player setup.
 
 The script draws entities as generated colored `Sprite2D` textures: cyan for the player, red for enemies and yellow for projectiles. Use WASD or arrow keys to move, and left-click to shoot toward the mouse pointer.
@@ -223,15 +223,14 @@ The script draws entities as generated colored `Sprite2D` textures: cyan for the
 
 ### Start order
 
-In separate WSL/Ubuntu terminals, from the repository root:
+Build once from the repository root:
 
 ```bash
-gcc -std=c11 -Wall -Wextra -Wpedantic -O2 server.c -o server -lm
-javac Backend.java
-./server 5000
+gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -O2 server.c -o server -lm
+javac Backend.java GameClient.java
 ```
 
-Start the second shard with `./server 5001` in another terminal, then run `java Backend` in a third terminal. Launch the Godot scene last so it can connect to `127.0.0.1:8080`. Stop old server processes before restarting them if a port is already occupied.
+Then use separate WSL/Ubuntu terminals: (1) `./server 5000`, (2) `./server 5001`, (3) `java Backend`, and (4) launch `godot/project.godot` in Godot and run the main scene. Start both shards before the backend, and launch the Godot client after the backend is listening. Stop old server processes before restarting them if a port is already occupied.
 
 ### Godot threading note
 
