@@ -107,6 +107,24 @@ public class Backend {
                 System.err.println("Publish: " + ex.getMessage());
             }
         }
+        broadcastPlayers();
+    }
+
+    static void broadcastPlayers() {
+        List<String> states = new ArrayList<>();
+        synchronized (lock) {
+            for (String entity : entities.values()) {
+                Matcher m = ENTITY.matcher(entity);
+                if (m.find() && m.group(4) != null && Integer.parseInt(m.group(4)) == 0) {
+                    states.add("{\"type\":\"player_state\",\"id\":" + m.group(1)
+                        + ",\"x\":" + m.group(2) + ",\"y\":" + m.group(3) + "}");
+                }
+            }
+        }
+        for (String state : states) {
+            if (a != null) send(a, state);
+            if (b != null) send(b, state);
+        }
     }
 
     static void readClient() {
