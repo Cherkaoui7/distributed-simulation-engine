@@ -1,0 +1,15 @@
+config_version=5
+
+[application]
+config/name="Distributed Simulation Engine - Godot Client"
+run/main_scene="res://Main.tscn"
+
+[display]
+window/size/viewport_width=1000
+window/size/viewport_height=650
+window/size/window_width_override=1000
+window/size/window_height_override=650
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
