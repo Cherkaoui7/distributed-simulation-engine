@@ -1,0 +1,56 @@
+
+# C compiled binaries and object files
+server
+*.o
+*.so
+*.a
+core
+core.*
+
+# Java compiled files
+*.class
+*.jar
+*.war
+hs_err_pid*.log
+
+# Backups and temporary files
+*.bak
+*.before-fix.*
+*.tmp
+*~
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# IDE configuration
+.idea/
+.vscode/
+*.iml
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Build output directories
+build/
+out/
+target/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Temporary test artifacts
+test-output/
+coverage/
+# Temporary source backups
+*.save
+
+# Compiled simulation executables
+shard
+simulation_server
