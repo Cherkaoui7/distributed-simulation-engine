@@ -1,0 +1,19 @@
+name: Build simulation
+on:
+  push:
+    branches: [main, phase-5-godot-combat]
+  pull_request:
+    branches: [main]
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Compile C shard
+        run: gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -O2 server.c -o server -lm
+      - name: Compile Java backend and legacy client
+        run: javac Backend.java GameClient.java
