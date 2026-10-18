@@ -69,10 +69,14 @@ static void simulate(int fd){
 static size_t snapshot(char*out,size_t cap,int tick){
  size_t n=(size_t)snprintf(out,cap,"{\"tick\":%d,\"entities\":[",tick);int first=1;
  for(int i=0;i<N&&n<cap;i++)if(e[i].active==1){int r=snprintf(out+n,cap-n,"%s{\"id\":%d,\"x\":%.3f,\"y\":%.3f,\"type\":%d,\"health\":%d,\"team\":%d}",first?"":",",e[i].id,e[i].x,e[i].y,e[i].type,e[i].health,e[i].team);if(r<0||(size_t)r>=cap-n)break;n+=(size_t)r;first=0;}
- if(n<cap)n+=(size_t)snprintf(out+n,cap-n,"]}\n");return n;
+ if(n<cap) n+=(size_t)snprintf(out+n,cap-n,"]}\n");
+ return n;
 }
 int main(int argc,char**argv){
- if(argc!=2)return fprintf(stderr,"Usage: %s PORT\n",argv[0]),1;port=atoi(argv[1]);if(port!=5000&&port!=5001)return 1;left=port==5000;initialize();
+ if(argc!=2){fprintf(stderr,"Usage: %s PORT\n",argv[0]);return 1;}
+ port=atoi(argv[1]);
+ if(port!=5000&&port!=5001)return 1;
+ left=port==5000;initialize();
  int srv=socket(AF_INET,SOCK_STREAM,0),opt=1;if(srv<0){perror("socket");return 1;}setsockopt(srv,SOL_SOCKET,SO_REUSEADDR,&opt,sizeof opt);
  struct sockaddr_in a={.sin_family=AF_INET,.sin_port=htons((unsigned short)port),.sin_addr.s_addr=htonl(INADDR_ANY)};
  if(bind(srv,(struct sockaddr*)&a,sizeof a)||listen(srv,1)){perror("bind/listen");close(srv);return 1;}
