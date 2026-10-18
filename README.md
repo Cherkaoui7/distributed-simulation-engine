@@ -199,3 +199,42 @@ Choose a license before publishing the repository. If you want others to reuse t
 **Abdessamad Cherkaoui**
 
 Add your portfolio, GitHub profile, and LinkedIn links here before publishing.
+
+## Phase 5 — Godot 4 and combat prototype
+
+The `phase-5-godot-combat` branch adds `godot/NetworkManager.gd` and extends the C/Java protocol for combat. This branch is a prototype; run and verify it locally before merging.
+
+### Godot scene setup
+
+1. Open the `godot/project.godot` file in Godot 4.
+2. The included `Main.tscn` already has a `Node2D` root with `NetworkManager.gd` attached.
+3. The project viewport is configured to 1000×650 to match the simulation world.
+4. Set the exported `player_id` to `1` unless you intentionally change the server's player setup.
+
+The script draws entities as generated colored `Sprite2D` textures: cyan for the player, red for enemies and yellow for projectiles. Use WASD or arrow keys to move, and left-click to shoot toward the mouse pointer.
+
+### Phase 5 protocol
+
+- Snapshot entities now include `id`, `x`, `y`, `type`, `health` and `team`.
+- Type `0` is a player, type `1` is an enemy, and type `2` is a projectile.
+- A shot command is newline-delimited JSON, for example `{"type":"shoot","player_id":1,"angle":45}`.
+- The backend routes a shot to the shard that currently owns its player. It also relays player-state messages to both shards so enemy AI can select the nearest known player across the shard boundary.
+- Projectiles move on the server, deal 25 damage on a hit, and are removed after a hit or leaving the world bounds. Enemies have 50 health; a player starts with 100 health.
+
+### Start order
+
+Build once from the repository root:
+
+```bash
+gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -O2 server.c -o server -lm
+javac Backend.java GameClient.java
+```
+
+Then use separate WSL/Ubuntu terminals: (1) `./server 5000`, (2) `./server 5001`, (3) `java Backend`, and (4) launch `godot/project.godot` in Godot and run the main scene. Start both shards before the backend, and launch the Godot client after the backend is listening. Stop old server processes before restarting them if a port is already occupied.
+
+### Godot threading note
+
+This lightweight client polls the non-blocking `StreamPeerTCP` connection from Godot's main `_process(delta)` loop. That keeps snapshot parsing and Sprite2D changes on the same thread as rendering, which is appropriate for this small prototype. The client does not create a separate network thread.
+
+For higher traffic, move TCP reading and line framing to a background `Thread`, place decoded snapshots in a thread-safe queue protected by a `Mutex`, and consume that queue from `_process(delta)`. The background thread must not add, move or free scene nodes; those scene-tree operations belong on the main thread. This version has not been load-tested and still uses lightweight `sscanf` / regular-expression parsing rather than a complete JSON library.
+
